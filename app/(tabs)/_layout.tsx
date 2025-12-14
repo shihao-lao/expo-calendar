@@ -6,9 +6,7 @@ import { Pressable } from "react-native";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
-import { Text } from "../../components/Themed";
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
@@ -23,11 +21,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
+        // 统一设置右上角按钮
         headerRight: () => (
-          <Link href="/" asChild>
+          // 修改 href 指向一个新的 modal 页面，而不是 "/"
+          <Link href="/add-event" asChild>
             <Pressable
               style={{
                 flexDirection: "row",
@@ -36,48 +34,42 @@ export default function TabLayout() {
               }}
             >
               {({ pressed }) => (
-                <>
-                  <FontAwesome
-                    name="plus-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? "light"].text}
-                    style={{ opacity: pressed ? 0.5 : 1, marginRight: 5 }}
-                  />
-                  <Text
-                    style={{
-                      color: Colors[colorScheme ?? "light"].text,
-                      opacity: pressed ? 0.5 : 1,
-                      fontSize: 16,
-                    }}
-                  >
-                    添加日程
-                  </Text>
-                </>
+                <FontAwesome
+                  name="plus" // 简化图标
+                  size={20}
+                  color={Colors[colorScheme ?? "light"].text}
+                  style={{ opacity: pressed ? 0.5 : 1 }}
+                />
               )}
             </Pressable>
           </Link>
         ),
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Month",
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
+      {/* 调整顺序：年 -> 月 -> 日，符合逻辑流 */}
       <Tabs.Screen
         name="year"
         options={{
-          title: "Year",
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: "年视图",
+          tabBarIcon: ({ color }) => <TabBarIcon name="th" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "月视图",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="calendar" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="day"
         options={{
-          title: "Day",
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: "日视图",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="list-alt" color={color} />
+          ),
         }}
       />
     </Tabs>
