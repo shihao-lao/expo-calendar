@@ -1,8 +1,14 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { CalendarEvent } from "@/types/calendar";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import React, { useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import EventDetails from "./EventDetails";
 
 interface EventListProps {
   selectedDate: Date;
@@ -12,6 +18,24 @@ interface EventListProps {
 export default function EventList({ selectedDate, events }: EventListProps) {
   console.log("selectedDate:", selectedDate);
   console.log("events:", events);
+
+  // 详情模态框状态
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null
+  );
+
+  // 处理事件点击
+  const handleEventPress = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setModalVisible(true);
+  };
+
+  // 关闭详情模态框
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedEvent(null);
+  };
 
   // 过滤出当天的事件
   const dayEvents = events.filter((e) => {
@@ -54,9 +78,11 @@ export default function EventList({ selectedDate, events }: EventListProps) {
               new Date(item.startTime).getTime() < new Date().getTime();
 
             return (
-              <View
+              <TouchableOpacity
                 key={item.id}
                 style={[styles.eventCard, isPast && styles.pastCard]}
+                activeOpacity={0.7}
+                onPress={() => handleEventPress(item)}
               >
                 <View
                   style={[
@@ -79,11 +105,18 @@ export default function EventList({ selectedDate, events }: EventListProps) {
                   </View>
                 </View>
                 {/* 可以放删除按钮 */}
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
+
+      {/* 事件详情模态框 */}
+      <EventDetails
+        visible={modalVisible}
+        event={selectedEvent}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 }
