@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
+import { NotificationService } from "@/services/NotificationService";
 import {
   Alert,
   Button,
@@ -14,7 +15,11 @@ import {
 // 引入修改后的组件
 import TimePickerModal from "@/components/calendar/TimePickerModal";
 import { ScheduleService } from "@/services/ScheduleService";
-import { clearStorage, debugStorage, getAllEvents } from "@/services/StorageDebugger";
+import {
+  clearStorage,
+  debugStorage,
+  getAllEvents,
+} from "@/services/StorageDebugger";
 
 export default function AddEventScreen() {
   const router = useRouter();
@@ -40,7 +45,7 @@ export default function AddEventScreen() {
       Alert.alert("提示", "结束时间不能早于开始时间");
       return;
     }
-
+    await NotificationService.scheduleReminder(title, startDate);
     // 构造数据
     const newEvent = {
       id: Date.now().toString(),

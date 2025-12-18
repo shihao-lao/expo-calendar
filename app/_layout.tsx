@@ -1,4 +1,5 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { NotificationService } from "@/services/NotificationService";
 import {
   DarkTheme,
   DefaultTheme,
@@ -35,7 +36,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (error) throw error;
   }, [error]);
-
+  useEffect(() => {
+    NotificationService.setup();
+  }, []);
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
