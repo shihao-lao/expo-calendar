@@ -12,41 +12,59 @@ import {
   TextInput,
   View,
 } from "react-native";
-// 引入修改后的组件
 import TimePickerModal from "@/components/calendar/TimePickerModal";
 import { ScheduleService } from "@/services/ScheduleService";
-import {
-  clearStorage,
-  debugStorage,
-  getAllEvents,
-} from "@/services/StorageDebugger";
 
 export default function AddEventScreen() {
   const router = useRouter();
 
-  // 表单状态
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
 
-  // 默认时间设置
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(() => {
+  // 初始化：默认时间设为“当前时间 + 2分钟”，方便测试
+  // 注意：这只是初始值，之后的一切操作都应基于 startDate 状态
+  const [startDate, setStartDate] = useState(() => {
     const d = new Date();
-    d.setHours(d.getHours() + 1); // 默认一小时后
+    d.setMinutes(d.getMinutes());
     return d;
   });
-  // 提交方案
+
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 1);
+    return d;
+  });
+
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert("提示", "请输入日程标题");
       return;
     }
+
+    // --- 1. 时间同步校验 (Debug 专用) ---
+    console.log("============= 保存操作开始 =============");
+    console.log("1. 用户选择的时间 (UI):", startDate.toLocaleString());
+    console.log("2. 当前系统时间:", new Date().toLocaleString());
+
+    // 严格校验：确保时间在未来
+    if (startDate.getTime() < Date.now() + 5000) {
+      Alert.alert("时间无效", "请选择至少 1 分钟以后的未来时间。");
+      return;
+    }
+
     if (endDate < startDate) {
       Alert.alert("提示", "结束时间不能早于开始时间");
       return;
     }
-    await NotificationService.scheduleReminder(title, startDate);
-    // 构造数据
+
+    // --- 2. 设置提醒 (关键修复：直接传 startDate) ---
+    // 不要在这里 new Date() 或做加减法，直接用状态里的时间
+    const notificationId = await NotificationService.scheduleReminder(
+      title,
+      startDate
+    );
+
+    // --- 3. 保存数据 (关键修复：使用同一个 startDate) ---
     const newEvent = {
       id: Date.now().toString(),
       title: title,
@@ -54,20 +72,24 @@ export default function AddEventScreen() {
         .getMinutes()
         .toString()
         .padStart(2, "0")}`,
-      startTime: startDate.toISOString(),
+      startTime: startDate.toISOString(), // 存入数据库的时间
       endTime: endDate.toISOString(),
       location: location,
     };
 
     try {
-      console.log("准备保存事件:", { title, location, startDate, endDate }); // 调试日志
-      const dateStr = startDate.toISOString().split("T")[0]; // 获取 YYYY-MM-DD 格式
-      console.log("日期字符串:", dateStr); // 调试日志
+      const dateStr = startDate.toISOString().split("T")[0];
       await ScheduleService.addEvent(dateStr, newEvent);
-      console.log("事件保存成功"); // 调试日志
-      router.back();
+
+      const diffSeconds = Math.floor((startDate.getTime() - Date.now()) / 1000);
+
+      Alert.alert(
+        "设置成功",
+        `时间已同步！\n\n设定触发时间: ${startDate.toLocaleTimeString()}\n倒计时: ${diffSeconds} 秒`,
+        [{ text: "好的", onPress: () => router.back() }]
+      );
     } catch (error) {
-      console.error("保存事件失败:", error); // 更详细的错误日志
+      console.error("保存事件失败:", error);
     }
   };
 
@@ -80,10 +102,10 @@ export default function AddEventScreen() {
           <Text style={styles.label}>标题</Text>
           <TextInput
             style={styles.input}
-            placeholder="例如: 团队周会"
+            placeholder="例如: 时间同步测试"
             value={title}
             onChangeText={setTitle}
-            autoFocus // 自动聚焦
+            autoFocus
           />
         </View>
 
@@ -91,20 +113,19 @@ export default function AddEventScreen() {
           <Text style={styles.label}>地点 (可选)</Text>
           <TextInput
             style={styles.input}
-            placeholder="例如: 会议室 A"
+            placeholder="例如: 办公室"
             value={location}
             onChangeText={setLocation}
           />
         </View>
 
         <View style={{ marginTop: 10 }}>
-          {/* 开始时间选择器 */}
           <TimePickerModal
-            label="开始时间"
+            label="开始时间 (触发提醒)"
             value={startDate}
             onChange={(date) => {
               setStartDate(date);
-              // 智能联动：如果开始时间晚于结束时间，自动推迟结束时间
+              // 自动调整结束时间，保持逻辑连贯
               if (date > endDate) {
                 const newEnd = new Date(date);
                 newEnd.setHours(newEnd.getHours() + 1);
@@ -113,33 +134,30 @@ export default function AddEventScreen() {
             }}
           />
 
-          {/* 结束时间选择器 */}
           <TimePickerModal
             label="结束时间"
             value={endDate}
             onChange={setEndDate}
           />
         </View>
+
+        <Text
+          style={{
+            marginTop: 20,
+            color: "#e67e22",
+            fontSize: 13,
+            lineHeight: 20,
+          }}
+        >
+          调试说明：{"\n"}
+          系统当前时间: {new Date().toLocaleTimeString()}
+        </Text>
       </ScrollView>
 
       <View style={styles.footer}>
         <Button title="取消" color="#888" onPress={() => router.back()} />
         <View style={{ width: 20 }} />
         <Button title="保存事件" onPress={handleSave} />
-      </View>
-
-      {/* 调试按钮 - 仅在开发时使用 */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-          padding: 20,
-          backgroundColor: "#f0f0f0",
-        }}
-      >
-        <Button title="查看存储数据" onPress={debugStorage} color="#007AFF" />
-        <Button title="获取所有事件" onPress={getAllEvents} color="#007AFF" />
-        <Button title="清空存储" onPress={clearStorage} color="#FF3B30" />
       </View>
 
       <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />

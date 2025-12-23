@@ -1,3 +1,4 @@
+// components/calendar/EventList.tsx
 import { CalendarEvent } from "@/types/calendar";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import React, { useState } from "react";
@@ -9,6 +10,8 @@ import {
   View,
 } from "react-native";
 import EventDetails from "./EventDetails";
+// 1. 引入倒计时组件
+import CountdownTimer from "@/components/CountdownTimer";
 
 interface EventListProps {
   selectedDate: Date;
@@ -16,9 +19,6 @@ interface EventListProps {
 }
 
 export default function EventList({ selectedDate, events }: EventListProps) {
-  console.log("selectedDate:", selectedDate);
-  console.log("events:", events);
-
   // 详情模态框状态
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
@@ -73,9 +73,12 @@ export default function EventList({ selectedDate, events }: EventListProps) {
               "zh-CN",
               { hour: "2-digit", minute: "2-digit" }
             );
-            // 简单的过期判断
-            const isPast =
-              new Date(item.startTime).getTime() < new Date().getTime();
+
+            const now = new Date().getTime();
+            const startTime = new Date(item.startTime).getTime();
+            const isPast = startTime < now;
+            // 判断是否是未来事件
+            const isFuture = startTime > now;
 
             return (
               <TouchableOpacity
@@ -94,6 +97,8 @@ export default function EventList({ selectedDate, events }: EventListProps) {
                   <Text style={[styles.eventTitle, isPast && styles.pastText]}>
                     {item.title}
                   </Text>
+
+                  {/* 时间显示行 */}
                   <View style={styles.metaRow}>
                     <FontAwesome
                       name="clock-o"
@@ -102,9 +107,30 @@ export default function EventList({ selectedDate, events }: EventListProps) {
                       style={{ marginRight: 4 }}
                     />
                     <Text style={styles.timeText}>{timeStr}</Text>
+                    {item.location ? (
+                      <>
+                        <Text style={{ marginHorizontal: 6, color: "#ccc" }}>
+                          |
+                        </Text>
+                        <FontAwesome
+                          name="map-marker"
+                          size={12}
+                          color="#999"
+                          style={{ marginRight: 2 }}
+                        />
+                        <Text style={styles.timeText}>{item.location}</Text>
+                      </>
+                    ) : null}
                   </View>
+
+                  {/* 2. 插入倒计时组件 (只在未开始的事件显示) */}
+                  {isFuture && (
+                    <CountdownTimer
+                      targetDate={item.startTime}
+                      title={item.title}
+                    />
+                  )}
                 </View>
-                {/* 可以放删除按钮 */}
               </TouchableOpacity>
             );
           })
@@ -146,7 +172,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  // 空状态
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -156,7 +181,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#999",
   },
-  // 事件卡片
   eventCard: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -165,7 +189,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: "#f0f0f0",
-    // 阴影
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

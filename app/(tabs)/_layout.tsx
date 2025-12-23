@@ -1,3 +1,5 @@
+import "react-native-gesture-handler";
+
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Link, Tabs } from "expo-router";
 import React from "react";
@@ -9,7 +11,7 @@ import Colors from "@/constants/Colors";
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
-  color: string;
+  color : string;
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }

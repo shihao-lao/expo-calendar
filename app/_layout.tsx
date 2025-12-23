@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { NotificationService } from "@/services/NotificationService";
 import {
