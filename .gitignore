@@ -41,4 +41,4 @@ yarn-error.*
 /android
 
 .pnpm-lock.yaml
-
+.package-lock.json
