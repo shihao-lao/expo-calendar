@@ -2,8 +2,8 @@ import EventList from "@/components/calendar/EventList";
 import MonthGrid from "@/components/calendar/MonthGrid";
 import { getAllEvents } from "@/services/StorageDebugger";
 import { CalendarEvent } from "@/types/calendar";
-import { useFocusEffect, useLocalSearchParams } from "expo-router"; // 1. 引入 useFocusEffect
-import React, { useCallback, useEffect, useState } from "react"; // 2. 引入 useCallback
+import { useLocalSearchParams, useFocusEffect } from "expo-router"; // 1. 引入 useFocusEffect
+import React, { useEffect, useState, useCallback } from "react"; // 2. 引入 useCallback
 import { Dimensions, StyleSheet, View } from "react-native";
 import {
   Gesture,
@@ -24,12 +24,11 @@ export default function MonthScreen() {
   const params = useLocalSearchParams();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [events, setEvents] = useState<CalendarEvent[]>([]); // 初始化为空数组
 
   // 动画值
   const translateX = useSharedValue(0);
 
-  // 初始化参数 (保持不变)
+  // 初始化参数
   const yearParam = parseInt(params.year as string);
   const monthParam = parseInt(params.month as string);
 
@@ -41,25 +40,28 @@ export default function MonthScreen() {
     }
   }, [yearParam, monthParam]);
 
-  // --- 核心修复：使用 useFocusEffect 自动刷新数据 ---
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+
+  // 3. 【核心修改】定义加载数据的函数
+  const loadEvents = useCallback(async () => {
+    console.log("正在刷新日程列表...");
+    const allEvents = await getAllEvents();
+    setEvents(allEvents);
+  }, []);
+
+  // 4. 【核心修改】页面获得焦点时自动刷新 (解决添加/删除后返回不更新的问题)
   useFocusEffect(
     useCallback(() => {
-      const loadEvents = async () => {
-        console.log("正在刷新日程列表...");
-        try {
-          const allEvents = await getAllEvents();
-          console.log(`刷新完成，共获取到 ${allEvents.length} 条数据`);
-          setEvents(allEvents);
-        } catch (e) {
-          console.error("刷新失败", e);
-        }
-      };
-
       loadEvents();
-    }, []) // 空依赖数组表示每次聚焦都会执行
+    }, [loadEvents])
   );
 
-  // --- 以下逻辑保持不变 ---
+  // 初始加载
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  // --- 核心切换逻辑 ---
   const updateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prevDate) => {
       const newDate = new Date(prevDate);
@@ -72,12 +74,14 @@ export default function MonthScreen() {
     });
   };
 
+  // --- 进场动画 ---
   const animateIn = (direction: "prev" | "next") => {
     if (direction === "prev") {
       translateX.value = -SCREEN_WIDTH;
     } else {
       translateX.value = SCREEN_WIDTH;
     }
+
     setTimeout(() => {
       translateX.value = withTiming(0, {
         duration: 300,
@@ -93,7 +97,7 @@ export default function MonthScreen() {
     }
   };
 
-  // 手势定义
+  // --- 手势定义 ---
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .onUpdate((e) => {
@@ -101,6 +105,7 @@ export default function MonthScreen() {
     })
     .onEnd((e) => {
       const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+
       if (e.translationX > SWIPE_THRESHOLD) {
         translateX.value = withTiming(
           SCREEN_WIDTH,
@@ -141,7 +146,7 @@ export default function MonthScreen() {
               <MonthGrid
                 currentDate={currentDate}
                 selectedDate={selectedDate}
-                events={events} // 传递最新的事件数据
+                events={events} // 确保 MonthGrid 也能拿到最新数据显示圆点
                 onDateSelect={handleDateSelect}
                 onMonthChange={(dir) => {
                   if (dir === "prev") {
@@ -170,7 +175,12 @@ export default function MonthScreen() {
         </GestureDetector>
 
         <View style={styles.listContainer}>
-          <EventList events={events} selectedDate={selectedDate} />
+          {/* 5. 【关键】将 loadEvents 作为 onRefresh 传给 EventList */}
+          <EventList
+            events={events}
+            selectedDate={selectedDate}
+            onRefresh={loadEvents}
+          />
         </View>
       </View>
     </GestureHandlerRootView>

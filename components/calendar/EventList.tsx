@@ -8,17 +8,25 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert, // 引入 Alert 用于确认
 } from "react-native";
 import EventDetails from "./EventDetails";
-// 1. 引入倒计时组件
 import CountdownTimer from "@/components/CountdownTimer";
+// 引入 Service 用于执行删除
+import { ScheduleService } from "@/services/ScheduleService";
 
 interface EventListProps {
   selectedDate: Date;
   events: CalendarEvent[];
+  // 新增回调：当发生删除操作时通知父组件刷新数据
+  onRefresh?: () => void;
 }
 
-export default function EventList({ selectedDate, events }: EventListProps) {
+export default function EventList({
+  selectedDate,
+  events,
+  onRefresh,
+}: EventListProps) {
   // 详情模态框状态
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
@@ -35,6 +43,40 @@ export default function EventList({ selectedDate, events }: EventListProps) {
   const handleCloseModal = () => {
     setModalVisible(false);
     setSelectedEvent(null);
+  };
+
+  // 处理删除逻辑
+  const handleDelete = (event: CalendarEvent) => {
+    Alert.alert("确认删除", `确定要删除日程 "${event.title}" 吗？`, [
+      {
+        text: "取消",
+        style: "cancel",
+      },
+      {
+        text: "删除",
+        style: "destructive", // iOS 上显示为红色
+        onPress: async () => {
+          try {
+            // 1. 获取存储用的日期字符串 YYYY-MM-DD
+            // 注意：这里要确保使用的是存入时的同一日期key
+            const dateStr = new Date(event.startTime)
+              .toISOString()
+              .split("T")[0];
+
+            // 2. 调用 Service 删除
+            await ScheduleService.deleteEvent(dateStr, event.id);
+
+            // 3. 通知父组件刷新列表 (实现实时更新)
+            if (onRefresh) {
+              onRefresh();
+            }
+          } catch (error) {
+            Alert.alert("错误", "删除失败，请重试");
+            console.error(error);
+          }
+        },
+      },
+    ]);
   };
 
   // 过滤出当天的事件
@@ -77,7 +119,6 @@ export default function EventList({ selectedDate, events }: EventListProps) {
             const now = new Date().getTime();
             const startTime = new Date(item.startTime).getTime();
             const isPast = startTime < now;
-            // 判断是否是未来事件
             const isFuture = startTime > now;
 
             return (
@@ -93,12 +134,13 @@ export default function EventList({ selectedDate, events }: EventListProps) {
                     isPast ? styles.pastBar : styles.activeBar,
                   ]}
                 />
+
+                {/* 中间内容区域 - 设置 flex: 1 占据剩余空间 */}
                 <View style={styles.eventContent}>
                   <Text style={[styles.eventTitle, isPast && styles.pastText]}>
                     {item.title}
                   </Text>
 
-                  {/* 时间显示行 */}
                   <View style={styles.metaRow}>
                     <FontAwesome
                       name="clock-o"
@@ -123,7 +165,6 @@ export default function EventList({ selectedDate, events }: EventListProps) {
                     ) : null}
                   </View>
 
-                  {/* 2. 插入倒计时组件 (只在未开始的事件显示) */}
                   {isFuture && (
                     <CountdownTimer
                       targetDate={item.startTime}
@@ -131,6 +172,16 @@ export default function EventList({ selectedDate, events }: EventListProps) {
                     />
                   )}
                 </View>
+
+                {/* 右侧删除按钮 */}
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => handleDelete(item)}
+                  // 防止点击删除时触发卡片的点击事件
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <FontAwesome name="trash-o" size={20} color="#FF3B30" />
+                </TouchableOpacity>
               </TouchableOpacity>
             );
           })
@@ -193,6 +244,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     elevation: 1,
+    alignItems: "center", // 确保子元素垂直居中
   },
   pastCard: {
     opacity: 0.7,
@@ -200,6 +252,7 @@ const styles = StyleSheet.create({
   },
   colorBar: {
     width: 4,
+    height: "100%", // 确保高度撑满
     borderRadius: 2,
     marginRight: 12,
   },
@@ -210,7 +263,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ccc",
   },
   eventContent: {
-    flex: 1,
+    flex: 1, // 关键：让内容占据中间大部分空间
   },
   eventTitle: {
     fontSize: 16,
@@ -229,5 +282,12 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 12,
     color: "#666",
+  },
+  // 新增：删除按钮样式
+  deleteBtn: {
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 5,
   },
 });
