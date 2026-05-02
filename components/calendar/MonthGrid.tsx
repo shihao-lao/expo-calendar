@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Colors from '@/constants/Colors';
 import { CalendarEvent } from '@/types/calendar';
+import { formatLocalDateKey } from '@/utils/time';
 
 interface MonthGridProps {
   currentDate: Date;
@@ -35,16 +36,18 @@ export default function MonthGrid({
     return arr;
   }, [currentDate]);
 
+  const eventDates = useMemo(() => {
+    return new Set(events.map((event) => formatLocalDateKey(event.startTime)));
+  }, [events]);
+
   // 检查某天是否有事件
   const hasEventOnDay = (day: number) => {
-    return events.some(e => {
-      const d = new Date(e.startTime);
-      return (
-        d.getDate() === day &&
-        d.getMonth() === currentDate.getMonth() &&
-        d.getFullYear() === currentDate.getFullYear()
-      );
-    });
+    const date = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      day
+    );
+    return eventDates.has(formatLocalDateKey(date));
   };
 
   const isSameDay = (d1: Date, d2: Date) => {

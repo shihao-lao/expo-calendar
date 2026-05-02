@@ -41,10 +41,12 @@ export default function AddEventScreen() {
       return;
     }
 
-    // --- 1. 时间同步校验 (Debug 专用) ---
-    console.log("============= 保存操作开始 =============");
-    console.log("1. 用户选择的时间 (UI):", startDate.toLocaleString());
-    console.log("2. 当前系统时间:", new Date().toLocaleString());
+    if (__DEV__) {
+      console.log("保存日程:", {
+        selectedTime: startDate.toLocaleString(),
+        currentTime: new Date().toLocaleString(),
+      });
+    }
 
     // 严格校验：确保时间在未来
     if (startDate.getTime() < Date.now() + 5000) {
@@ -75,17 +77,16 @@ export default function AddEventScreen() {
       startTime: startDate.toISOString(), // 存入数据库的时间
       endTime: endDate.toISOString(),
       location: location,
+      notificationId,
     };
 
     try {
-      const dateStr = startDate.toISOString().split("T")[0];
+      const dateStr = ScheduleService.getDateKey(startDate);
       await ScheduleService.addEvent(dateStr, newEvent);
-
-      const diffSeconds = Math.floor((startDate.getTime() - Date.now()) / 1000);
 
       Alert.alert(
         "设置成功",
-        `时间已同步！\n\n设定触发时间: ${startDate.toLocaleTimeString()}\n倒计时: ${diffSeconds} 秒`,
+        `日程已保存。\n提醒时间: ${startDate.toLocaleTimeString()}`,
         [{ text: "好的", onPress: () => router.back() }]
       );
     } catch (error) {
@@ -141,17 +142,6 @@ export default function AddEventScreen() {
           />
         </View>
 
-        <Text
-          style={{
-            marginTop: 20,
-            color: "#e67e22",
-            fontSize: 13,
-            lineHeight: 20,
-          }}
-        >
-          调试说明：{"\n"}
-          系统当前时间: {new Date().toLocaleTimeString()}
-        </Text>
       </ScrollView>
 
       <View style={styles.footer}>

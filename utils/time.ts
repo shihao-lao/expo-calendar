@@ -14,6 +14,26 @@ export const calculateTimeDifference = (targetDate: string | Date): number => {
   return target.getTime() - Date.now();
 };
 
+export const formatLocalDateKey = (date: string | Date): string => {
+  const target = typeof date === "string" ? new Date(date) : date;
+
+  if (!(target instanceof Date) || isNaN(target.getTime())) {
+    throw new Error("无效的时间参数");
+  }
+
+  const year = target.getFullYear();
+  const month = String(target.getMonth() + 1).padStart(2, "0");
+  const day = String(target.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+export const compareByStartTime = (
+  a: { startTime: string },
+  b: { startTime: string }
+): number => {
+  return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+};
+
 // 转换为 UTC 时间字符串
 export const toUTCString = (date: Date): string => {
   return date.toUTCString();

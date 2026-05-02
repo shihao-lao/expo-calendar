@@ -1,5 +1,18 @@
 import { CalendarEvent } from "@/types/calendar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { compareByStartTime } from "@/utils/time";
+
+const isCalendarEvent = (event: unknown): event is CalendarEvent => {
+  if (!event || typeof event !== "object") return false;
+
+  const candidate = event as Partial<CalendarEvent>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.startTime === "string" &&
+    typeof candidate.endTime === "string"
+  );
+};
 
 // 获取所有事件数据
 export const getAllEvents = async (): Promise<CalendarEvent[]> => {
@@ -18,17 +31,11 @@ export const getAllEvents = async (): Promise<CalendarEvent[]> => {
       if (value) {
         try {
           // 解析存储的数据
-          const events: any[] = JSON.parse(value || "[]");
+          const events: unknown = JSON.parse(value || "[]");
+          const safeEvents = Array.isArray(events) ? events : [];
 
           // 转换为标准 CalendarEvent 格式
-          const convertedEvents: CalendarEvent[] = events.map((event) => ({
-            id: event.id || Math.random().toString(), // 确保有 ID
-            title: event.title || "无标题",
-            startTime: event.startTime, // 关键：这是 ISO 字符串
-            endTime: event.endTime,
-            location: event.location || undefined,
-            color: event.color,
-          }));
+          const convertedEvents = safeEvents.filter(isCalendarEvent);
 
           allEvents = [...allEvents, ...convertedEvents];
         } catch (e) {
@@ -38,9 +45,7 @@ export const getAllEvents = async (): Promise<CalendarEvent[]> => {
     });
 
     // 4. 按开始时间排序 (从小到大)
-    allEvents.sort((a, b) => {
-      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-    });
+    allEvents.sort(compareByStartTime);
 
     return allEvents;
   } catch (error) {
@@ -52,11 +57,15 @@ export const getAllEvents = async (): Promise<CalendarEvent[]> => {
 export const debugStorage = async () => {
   const keys = await AsyncStorage.getAllKeys();
   const result = await AsyncStorage.multiGet(keys);
-  console.log("Storage Dump:", JSON.stringify(result, null, 2));
+  if (__DEV__) {
+    console.log("Storage Dump:", JSON.stringify(result, null, 2));
+  }
   return result;
 };
 
 export const clearStorage = async () => {
   await AsyncStorage.clear();
-  console.log("Storage 已清空");
+  if (__DEV__) {
+    console.log("Storage 已清空");
+  }
 };

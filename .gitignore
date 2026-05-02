@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -40,5 +41,5 @@ yarn-error.*
 /ios
 /android
 
-.pnpm-lock.yaml
-.package-lock.json
+# Keep one lockfile committed. This project uses pnpm.
+package-lock.json

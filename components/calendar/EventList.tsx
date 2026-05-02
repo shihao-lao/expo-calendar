@@ -14,6 +14,7 @@ import EventDetails from "./EventDetails";
 import CountdownTimer from "@/components/CountdownTimer";
 // 引入 Service 用于执行删除
 import { ScheduleService } from "@/services/ScheduleService";
+import { NotificationService } from "@/services/NotificationService";
 
 interface EventListProps {
   selectedDate: Date;
@@ -59,11 +60,16 @@ export default function EventList({
           try {
             // 1. 获取存储用的日期字符串 YYYY-MM-DD
             // 注意：这里要确保使用的是存入时的同一日期key
-            const dateStr = new Date(event.startTime)
-              .toISOString()
-              .split("T")[0];
+            const dateStr = ScheduleService.getDateKey(event.startTime);
 
             // 2. 调用 Service 删除
+            await NotificationService.cancelReminder(event.notificationId).catch(
+              (error) => {
+                if (__DEV__) {
+                  console.warn("取消通知失败，继续删除本地日程:", error);
+                }
+              }
+            );
             await ScheduleService.deleteEvent(dateStr, event.id);
 
             // 3. 通知父组件刷新列表 (实现实时更新)

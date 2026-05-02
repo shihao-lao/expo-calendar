@@ -11,7 +11,7 @@ import Colors from "@/constants/Colors";
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
-  color : string;
+  color: string;
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
@@ -52,14 +52,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="year"
         options={{
-          title: "年视图",
+          title: "Year",
           tabBarIcon: ({ color }) => <TabBarIcon name="th" color={color} />,
         }}
       />
       <Tabs.Screen
         name="index"
         options={{
-          title: "月视图",
+          title: "Month",
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="calendar" color={color} />
           ),
@@ -68,7 +68,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="day"
         options={{
-          title: "日视图",
+          title: "Day",
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="list-alt" color={color} />
           ),

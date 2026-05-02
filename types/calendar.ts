@@ -5,6 +5,8 @@ export interface CalendarEvent {
   endTime: string;
   color?: string;
   location?: string;
+  description?: string;
+  notificationId?: string | null;
 }
 
 export type ViewType = 'year' | 'month' | 'day';
