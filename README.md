@@ -1,46 +1,49 @@
 # Expo Calendar
 
-A local calendar and reminder app built with Expo Router, React Native, AsyncStorage, and Expo Notifications.
+一个简易的日历 App，支持日程管理、本地提醒和实时天气。
 
-## Features
+## 功能
 
-- Year, month, and day calendar views
-- Local schedule storage with AsyncStorage
-- Local notification reminders
-- Weather summary on the day view
-- Event details, deletion, and countdown display
+- 年/月/日视图日历
+- 添加、查看、删除日程
+- 本地通知提醒
+- 实时天气显示
 
-## Getting Started
+## APIkey依赖
 
-```bash
-pnpm install
-pnpm start
-```
+- **和风天气** - 获取天气数据
+- **高德地图** - IP 定位和天气兜底
 
-Run on a specific target:
+## 快速开始
 
-```bash
-pnpm android
-pnpm ios
-pnpm web
-```
+### 1. 配置环境变量
 
-## Environment
-
-Create a local `.env` file with:
+创建 `.env` 文件：
 
 ```bash
-EXPO_PUBLIC_AMAP_KEY=your_amap_key
-EXPO_PUBLIC_WEATHER_KEY=your_qweather_key
+EXPO_PUBLIC_AMAP_KEY=你的高德Key
+EXPO_PUBLIC_WEATHER_KEY=你的和风天气Key
 EXPO_PUBLIC_WEATHER_API_HOST=devapi.qweather.com
 ```
 
-## Quality Checks
+### 2. 安装依赖
 
 ```bash
-pnpm typecheck
+pnpm install
 ```
 
-## Notes
+### 3. 运行项目
 
-Notifications require device permissions. Local reminders are scheduled with `expo-notifications`, and deleting an event cancels its scheduled reminder when available.
+```bash
+# 启动开发服务器
+pnpm run start
+
+# Android
+pnpm run android
+
+# iOS
+pnpm run ios
+
+# Web
+pnpm run web
+```
